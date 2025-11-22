@@ -8,22 +8,11 @@ Each experiment tests a hypothesis: **“If we build X for users like Y, they’
 
 | Component | Purpose |
 | :--- | :--- |
-| **Customer Segment Data Store** | A database storing market data, persona profiles, and segment insights for agents to query. |
-| **Experiment Data Store** | A database tracking the state, configuration, and results of all product experiments. |
-| **Multi-Agent System** | Orchestrates the entire product lifecycle with specialized agents:<ul>
-<li>**PM Agent:** Defines strategy, roadmap, and user stories.</li>
-<li>**UX/UI Designer Agent:** Focuses on UX/UI, wireframes, and prototypes.</li>
-<li>**Backend System Design Agent:** Designs the system architecture and data models.</li>
-<li>**Frontend SWE Agent:** Implements user-facing features and UI logic.</li>
-<li>**Backend SWE Agent:** Implements server-side logic, APIs, and database interactions.</li>
-<li>**Marketing Agent:** Develops messaging, campaigns, and drives user acquisition.</li>
-<li>**Sales Agent:** Handles lead generation, conversions, and customer relationships.</li>
-<li>**Analytics Agent:** Tracks technical, product, and business KPIs for each experiment.</li>
-</ul> |
-| **Revenue Data Store** | Connects experiments to real monetization (e.g., Stripe sandbox, leads, ad conversions). |
-| **Analytics Data Store** | Tracks technical, product, and business KPIs for each experiment. |
-| **Memory & Learning** | Builds historical knowledge about what worked for which segments. |
-| **Governance Layer** | Budgeting, safety, compliance, and human approval checkpoints. |
+| **Orchestrator** | **(System)** The central manager that coordinates agents, enforces governance, and executes "Scale or Kill" decisions based on analytics. |
+| **Multi-Agent System** | **(Brains)** Specialized agents that perform the actual work:<ul><li>**PM Agent**</li><li>**UX/UI Designer Agent**</li><li>**Backend System Design Agent**</li><li>**Frontend SWE Agent**</li><li>**Backend SWE Agent**</li><li>**Marketing Agent**</li><li>**Sales Agent**</li><li>**Analytics Agent**</li></ul> |
+| **Event Bus** | **(Communication)** In-memory message broker that decouples agents and handles asynchronous events. |
+| **Unified Data Store (PostgreSQL)** | **(Memory)** A single database handling all persistence:<ul><li>**Customer Segments:** Profiles & insights.</li><li>**Experiments:** Hypotheses & status.</li><li>**Metrics:** Raw events & financial data.</li><li>**Learning:** Vector embeddings for historical knowledge.</li></ul> |
+| **Governance Layer** | **(Policy)** Hard-coded rules (budget caps, safety checks) that the Orchestrator enforces. |
 
 ## Core Concept: “Customer Segment → Experiments → Winners”
 
