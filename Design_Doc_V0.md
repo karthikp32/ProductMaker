@@ -8,11 +8,10 @@ Each experiment tests a hypothesis: **“If we build X for users like Y, they’
 
 | Component | Purpose |
 | :--- | :--- |
-| **Orchestrator** | **(System)** The central manager that coordinates agents, enforces governance, and executes "Scale or Kill" decisions based on analytics. |
+| **Orchestrator** | **(System)** The central manager that coordinates agents and executes "Scale or Kill" decisions. **Also acts as the Governance Layer**, enforcing hard-coded rules (budget caps, safety checks, human approval). |
 | **Multi-Agent System** | **(Brains)** Specialized agents that perform the actual work:<ul><li>**PM Agent**</li><li>**UX/UI Designer Agent**</li><li>**Backend System Design Agent**</li><li>**Frontend SWE Agent**</li><li>**Backend SWE Agent**</li><li>**Marketing Agent**</li><li>**Sales Agent**</li><li>**Analytics Agent**</li></ul> |
 | **Event Bus** | **(Communication)** In-memory message broker that decouples agents and handles asynchronous events. |
 | **Unified Data Store (PostgreSQL)** | **(Memory)** A single database handling all persistence:<ul><li>**Customer Segments:** Profiles & insights.</li><li>**Experiments:** Hypotheses & status.</li><li>**Metrics:** Raw events & financial data.</li><li>**Learning:** Vector embeddings for historical knowledge.</li></ul> |
-| **Governance Layer** | **(Policy)** Hard-coded rules (budget caps, safety checks) that the Orchestrator enforces. |
 
 ## Core Concept: “Customer Segment → Experiments → Winners”
 
@@ -238,11 +237,16 @@ CREATE TABLE experiment_reports (
 ```
 
 ## Orchestration & Memory
-
-### Orchestrator
-* Coordinates lifecycle of all product experiments.
-* Enforces global policies (budget, safety).
-* Tracks state transitions (idea → design → build → test → release → eval).
+ 
+### Orchestrator (Manager & Governor)
+*   **Lifecycle Management:** Tracks state transitions (idea → design → build → test → release → eval).
+*   **Resource Isolation:** Ensures each experiment runs in its own Docker container.
+*   **Governance & Safety (The "Adult in the Room"):**
+    *   **Budget Enforcement:** Hard stops any experiment that exceeds its `budget_cents`.
+    *   **Safety Checks:** Scans all agent outputs for PII or malicious patterns before release.
+    *   **Human-in-the-Loop:** Pauses execution for manual approval before important decisions like:
+        *   Posting publicly to social media.
+        *   Deploying to a live URL.
 
 ### Memory / Learning Layer
 * Stores all experiment metadata, results, and qualitative feedback.
