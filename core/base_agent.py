@@ -4,6 +4,9 @@ from infrastructure.event_bus import EventBus
 
 logger = logging.getLogger(__name__)
 
+from infrastructure.db_client import DBClient
+from infrastructure.llm_client import LLMClient
+
 class BaseAgent:
     """
     Abstract base class for all agents in the system.
@@ -11,6 +14,8 @@ class BaseAgent:
     def __init__(self, name: str, event_bus: EventBus):
         self.name = name
         self.event_bus = event_bus
+        self.db = DBClient()
+        self.llm = LLMClient()
         self.setup_subscriptions()
 
     def setup_subscriptions(self):
