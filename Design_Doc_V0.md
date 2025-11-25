@@ -115,17 +115,88 @@ The PM Agent writes to this store, and the Orchestrator reads from it to execute
 * The Orchestrator ensures resource isolation and budget caps.
 * After completion → archived with full results and lessons learned.
 
-## Agent System (Simplified Roles)
+## Agent Specifications
 
-| Agent | Role |
-| :--- | :--- |
-| **PM Agent** | Researches, defines segment, writes ExperimentSpecs, measures success. |
-| **Designer Agent** | Designs mockups & copy for MVPs and campaigns. |
-| **SWE Agent** | Builds MVP backend/frontend with CI/CD automation. |
-| **QA Agent** | Tests functionality, accessibility, and basic performance. |
-| **Marketing Agent** | Runs Reddit/Twitter ads, writes posts, tracks engagement. |
-| **Sales Agent** | Conducts cold outreach and logs responses. |
-| **Analytics Agent** | Tracks metrics, runs A/B tests, and ranks experiments. |
+### 1. Product Manager (PM) Agent
+*   **Role:** Strategic lead. Owns the "Why" and "What".
+*   **Responsibilities:**
+    *   Analyzes segment data to find pain points.
+    *   Generates product hypotheses.
+    *   Writes the Product Requirements Document (PRD).
+    *   Prioritizes features for MVP.
+*   **Inputs:** Customer Segment Data, Budget Constraints.
+*   **Outputs:** Experiment Spec, PRD, User Stories.
+*   **Tools:** `query_segment_store`, `write_hypothesis`.
+
+### 2. UX/UI Designer Agent
+*   **Role:** Visual lead. Owns the "Look and Feel".
+*   **Responsibilities:**
+    *   Translates PRD into wireframes and high-fidelity mockups.
+    *   Writes CSS/Tailwind design tokens.
+    *   Creates user flow diagrams.
+*   **Inputs:** PRD, User Stories.
+*   **Outputs:** Figma-style JSON/Images, CSS Design System, UI Component Specs.
+*   **Tools:** `generate_image` (DALL-E/Flux), `write_design_tokens`.
+
+### 3. Backend System Design Agent
+*   **Role:** Architect. Owns the "Structure".
+*   **Responsibilities:**
+    *   Defines API endpoints (OpenAPI spec).
+    *   Designs database schema (SQL).
+    *   Selects technology stack (e.g., Node vs Python).
+*   **Inputs:** PRD, UI Flows.
+*   **Outputs:** System Architecture Doc, DB Schema, API Spec.
+*   **Tools:** `write_architecture_doc`.
+
+### 4. Frontend SWE Agent
+*   **Role:** Builder (Client-side). Owns the "Interaction".
+*   **Responsibilities:**
+    *   Implements React/HTML/JS components.
+    *   Connects UI to Backend APIs.
+    *   Ensures responsiveness and accessibility.
+*   **Inputs:** UI Specs, API Spec.
+*   **Outputs:** Frontend Codebase, Dockerfile (Frontend).
+*   **Tools:** `write_code`, `run_tests`.
+
+### 5. Backend SWE Agent
+*   **Role:** Builder (Server-side). Owns the "Logic".
+*   **Responsibilities:**
+    *   Implements API handlers and business logic.
+    *   Sets up database migrations.
+    *   Integrates 3rd party APIs (Stripe, OpenAI).
+*   **Inputs:** System Architecture, API Spec.
+*   **Outputs:** Backend Codebase, Dockerfile (Backend).
+*   **Tools:** `write_code`, `run_tests`, `db_migrate`.
+
+### 6. Marketing Agent
+*   **Role:** Growth lead. Owns "Awareness".
+*   **Responsibilities:**
+    *   Writes ad copy and landing page copy.
+    *   Generates social media posts (Reddit, X).
+    *   Configures ad targeting parameters.
+*   **Inputs:** Value Proposition, Segment Profile.
+*   **Outputs:** Marketing Campaigns, Ad Copy, Social Posts.
+*   **Tools:** `generate_copy`, `post_to_social_sandbox`.
+
+### 7. Sales Agent
+*   **Role:** Closer. Owns "Conversion".
+*   **Responsibilities:**
+    *   Drafts cold outreach emails.
+    *   Responds to inbound leads (simulated or real).
+    *   Manages CRM updates.
+*   **Inputs:** Lead List, Product Details.
+*   **Outputs:** Email Sequences, CRM Entries.
+*   **Tools:** `send_email_sandbox`, `update_crm`.
+
+### 8. Analytics Agent
+*   **Role:** Data Scientist. Owns "Truth".
+*   **Responsibilities:**
+    *   Monitors experiment logs.
+    *   Calculates ROI, conversion rates, and churn.
+    *   Produces the final "Scale or Kill" report.
+*   **Inputs:** Raw Event Logs (`experiment_metrics`).
+*   **Outputs:** Experiment Report (`experiment_reports`).
+*   **Tools:** `query_metrics`, `calculate_stats`.
 
 Each agent communicates via event bus, with explicit task contracts (so you can swap in improved versions later).
 
@@ -263,14 +334,7 @@ CREATE TABLE experiment_reports (
 | **Experiment Efficiency** | time-to-launch, cost-per-experiment, success rate |
 | **Learning Loop** | improvement in idea quality per segment over time |
 
-## Revenue Engine
 
-To prove self-sustainability, ProductMaker should:
-* Plug into Stripe sandbox for initial “mock revenue”.
-* Progress to real Stripe/PayPal for real customers.
-* Log unit economics per experiment.
-* Rank experiments by revenue-per-dollar-spent.
-* Later: auto-scale profitable ones, kill the rest.
 
 ## Interface (How you use ProductMaker)
 
