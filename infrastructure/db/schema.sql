@@ -12,7 +12,7 @@ CREATE TABLE customer_segments (
 );
 
 -- 2. Product Hypotheses
-CREATE TABLE product_hypotheses (
+CREATE TABLE product_experiments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     segment_id UUID REFERENCES customer_segments(id),
     status VARCHAR(50) DEFAULT 'DRAFT',
@@ -25,7 +25,7 @@ CREATE TABLE product_hypotheses (
 -- 3. Experiment Metrics
 CREATE TABLE experiment_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    experiment_id UUID REFERENCES product_hypotheses(id),
+    experiment_id UUID REFERENCES product_experiments(id),
     metric_type VARCHAR(50),
     value NUMERIC,
     metadata JSONB,
@@ -35,7 +35,7 @@ CREATE TABLE experiment_metrics (
 -- 4. Experiment Reports
 CREATE TABLE experiment_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    experiment_id UUID REFERENCES product_hypotheses(id),
+    experiment_id UUID REFERENCES product_experiments(id),
     report_date DATE,
     roi_percentage NUMERIC,
     opportunity_score INT,
