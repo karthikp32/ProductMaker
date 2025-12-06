@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict
-from core.interfaces import Agent
+from core.base_agent import BaseAgent
 
-class MarketingAgentInterface(Agent):
+class MarketingAgentInterface(BaseAgent):
     """
     Abstract interface for the Marketing Agent.
     Responsible for creating content, ad copy, and campaigns to drive awareness.

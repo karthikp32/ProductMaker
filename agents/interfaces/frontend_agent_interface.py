@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict
-from core.interfaces import Agent
+from core.base_agent import BaseAgent
 
-class FrontendAgentInterface(Agent):
+class FrontendAgentInterface(BaseAgent):
     """
     Abstract interface for the Frontend Agent.
     Responsible for building user interface components and connecting them to the backend.

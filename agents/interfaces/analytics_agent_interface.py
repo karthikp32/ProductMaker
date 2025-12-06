@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict
-from core.interfaces import Agent
+from core.base_agent import BaseAgent
 
-class AnalyticsAgentInterface(Agent):
+class AnalyticsAgentInterface(BaseAgent):
     """
     Abstract interface for the Analytics Agent.
     Responsible for interpreting data, running reports, and verifying success metrics.

@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict
-from core.interfaces import Agent
+from core.base_agent import BaseAgent
 
-class ArchitectAgentInterface(Agent):
+class ArchitectAgentInterface(BaseAgent):
     """
     Abstract interface for the Architect Agent.
     Responsible for translating product specs into technical architecture (DB schema, APIs).

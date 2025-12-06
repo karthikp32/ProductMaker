@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict
-from core.interfaces import Agent
+from core.base_agent import BaseAgent
 
-class SalesAgentInterface(Agent):
+class SalesAgentInterface(BaseAgent):
     """
     Abstract interface for the Sales Agent.
     Responsible for outbound prospecting, drafting emails, and managing leads.

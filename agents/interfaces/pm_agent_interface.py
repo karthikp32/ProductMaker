@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from typing import Any, Dict
-from core.interfaces import Agent
+from core.base_agent import BaseAgent
 
-class PMAgentInterface(Agent):
+class PMAgentInterface(BaseAgent):
     """
     Abstract interface for the Product Manager Agent.
     Responsible for market research, hygiene checks, and defining product specifications.
