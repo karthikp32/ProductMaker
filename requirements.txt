@@ -8,3 +8,7 @@ uvicorn
 click
 requests
 google-generativeai
+smolagents
+duckduckgo-search
+markdownify
+beautifulsoup4
