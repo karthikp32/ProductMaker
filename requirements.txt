@@ -3,3 +3,8 @@ pgvector
 openai
 pydantic
 python-dotenv
+fastapi
+uvicorn
+click
+requests
+google-generativeai
