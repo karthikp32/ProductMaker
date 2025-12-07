@@ -18,7 +18,7 @@ Each experiment tests a hypothesis: **“If we build X for users like Y, they’
 Each Customer Segment Run goes through this lifecycle:
 
 ### Step 1 — Define Customer Segment
-**PM Agent identifies and writes to Customer Segment Data Store:**
+**PM Agent uses the Market Research Sub-agent (powered by LangChain/HuggingFace Deep Research) to do market research and write:**
 * Persona profiles
 * Typical workflows
 * Pain points
@@ -122,13 +122,27 @@ The PM Agent writes to this store, and the Orchestrator reads from it to execute
 ### 1. Product Manager (PM) Agent
 *   **Role:** Strategic lead. Owns the "Why" and "What".
 *   **Responsibilities:**
-    *   Analyzes segment data to find pain points.
+    *   **Uses Market Research Sub-agent** to understand a customer segment.
     *   Generates product hypotheses.
     *   Writes the Product Requirements Document (PRD).
     *   Prioritizes features for MVP.
 *   **Inputs:** Customer Segment Data, Budget Constraints.
 *   **Outputs:** Experiment Spec, PRD, User Stories.
-*   **Tools:** `query_segment_store`, `write_hypothesis`.
+*   **Tools:** `market_research` (Sub-agent), `query_segment_store`, `write_hypothesis`.
+
+### 1a. Market Research Agent (PM Sub-agent)
+*   **Role:** Intelligence Gathering.
+*   **Implementation:** Powered by **LangChain** or **Hugging Face Open DeepResearch**.
+*   **Responsibilities:**
+    *   Scrapes web for latest trends (Reddit, News, Competitors).
+    *   Synthesizes vast amounts of unstructured data into a thorough report.
+*   **Feeds:** PM Agent.
+
+### Resources:
+*   **LangChain Market Research Assistant Video:** `https://www.youtube.com/watch?v=2GeTGEVyPfo`
+*   **Blog about Deep Research:** `https://www.j2.gg/thoughts/deep-research-how-it-works`
+*   **LangChain Deep Research Repo:** `https://github.com/langchain-ai/local-deep-researcher`
+*   **Hugging Face Deep Research Repo:** `https://github.com/huggingface/smolagents/tree/main/examples/open_deep_research`
 
 ### 2. System Design Agent
 *   **Role:** Architect. Owns the "Structure" & "Plan".
