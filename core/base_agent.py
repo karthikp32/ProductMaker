@@ -6,7 +6,7 @@ from infrastructure.event_bus import EventBus
 
 logger = logging.getLogger(__name__)
 
-from infrastructure.db_client import DBClient
+from infrastructure.db.db_client import DBClient
 from infrastructure.llm.llm_client import LLMClient
 
 class AgentFunction(ABC):

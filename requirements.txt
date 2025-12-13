@@ -12,3 +12,5 @@ smolagents
 duckduckgo-search
 markdownify
 beautifulsoup4
+litellm
+ddgs

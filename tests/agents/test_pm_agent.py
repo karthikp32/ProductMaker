@@ -28,15 +28,15 @@ class TestPMAgent(unittest.TestCase):
         self.agent.db.fetch_one.return_value = None
         
         # Setup specific return values for LLM clients
-        self.agent.deep_research_client.generate.return_value = "Deep research content..."
+        self.agent.deep_research_client.research_customer_segment.return_value = "Deep research content..."
         self.agent.reasoning_client.generate.return_value = "Hypothesis content..."
 
         payload = {"segment_name": "Teens"}
         self.agent.on_segment_request(payload)
 
         # Verify Deep Research was called
-        self.agent.deep_research_client.generate.assert_called_once()
-        args, _ = self.agent.deep_research_client.generate.call_args
+        self.agent.deep_research_client.research_customer_segment.assert_called_once()
+        args, _ = self.agent.deep_research_client.research_customer_segment.call_args
         self.assertIn("Teens", args[0])
 
         # Verify Hypothesis Generation was called
@@ -58,20 +58,20 @@ class TestPMAgent(unittest.TestCase):
         self.agent.on_segment_request(payload)
 
         # Verify Deep Research was NOT called
-        self.agent.deep_research_client.generate.assert_not_called()
+        self.agent.deep_research_client.research_customer_segment.assert_not_called()
 
         # Verify Hypothesis Generation was still called
         self.agent.reasoning_client.generate.assert_called_once()
 
     def test_handle_instruction_market_research(self):
         instruction = "Do a deep dive about Crypto"
-        self.agent.deep_research_client.generate.return_value = "Crypto trends..."
+        self.agent.deep_research_client.research_customer_segment.return_value = "Crypto trends..."
         
         self.agent.handle_instruction(instruction, {})
 
         # Verify Deep Research called with correct topic
-        self.agent.deep_research_client.generate.assert_called_once()
-        args, _ = self.agent.deep_research_client.generate.call_args
+        self.agent.deep_research_client.research_customer_segment.assert_called_once()
+        args, _ = self.agent.deep_research_client.research_customer_segment.call_args
         self.assertIn("Crypto", args[0])
 
         # Verify Event Published

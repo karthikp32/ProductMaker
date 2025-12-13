@@ -20,7 +20,7 @@ class DeepResearchClient(LLMClient):
         # Initialize the model - using Gemini via LiteLLM
         # Ensure you have the `google-generativeai` package installed
         self.model = LiteLLMModel(
-            model_id="gemini/gemini-2.0-flash-exp", # Using the faster, cheaper model for research loops
+            model_id="gemini/gemini-2.5-pro", 
             api_key=self.api_key
         )
         

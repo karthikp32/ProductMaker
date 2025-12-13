@@ -95,7 +95,7 @@ class PMAgent(BaseAgent):
         response = self.deep_research_client.research_customer_segment(topic)
         
         # In a real app, we would save 'response' to the DB here.
-        logger.info(f"PM Agent: Research result: {response[:100]}... (truncated)")
+        logger.info(f"PM Agent: Research result: {response}... (truncated)")
         # self.db.execute("INSERT INTO research_data ...")
 
     def _generate_hypothesis(self, segment_name: str) -> dict:
