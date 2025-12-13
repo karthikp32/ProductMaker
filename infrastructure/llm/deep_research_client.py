@@ -13,9 +13,9 @@ class DeepResearchClient(LLMClient):
     Uses a CodeAgent that can search the web and visit pages.
     """
     def __init__(self):
-        self.api_key = os.getenv("GOOGLE_API_KEY") # We can use Gemini with LiteLLM
+        self.api_key = os.getenv("GEMINI_API_KEY") # We can use Gemini with LiteLLM
         if not self.api_key:
-            logger.warning("GOOGLE_API_KEY not found. Agent may fail.")
+            logger.warning("GEMINI_API_KEY not found. Agent may fail.")
         
         # Initialize the model - using Gemini via LiteLLM
         # Ensure you have the `google-generativeai` package installed
