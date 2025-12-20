@@ -29,8 +29,8 @@ class TestDeepResearchQuality(unittest.TestCase):
         
         logger.info(f"--- Starting Deep Research on: {topic} ---")
         
-        # 1. Run the real Deep Research Client
-        research_output = self.agent.deep_research_client.research_customer_segment(topic)
+        # 1. Run the real Deep Research (via PMAgent)
+        research_output = self.agent.research_customer_segment(topic)
         
         # 2. Save output to file for manual inspection
         output_file = f"tests/agents/research_output_{topic.replace(' ', '_')}.txt"

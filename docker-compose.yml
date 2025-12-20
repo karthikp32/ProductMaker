@@ -3,6 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
+    image: karthikp32/productmaker-app:latest
     volumes:
       - .:/app
     environment:

@@ -39,7 +39,7 @@ elif [ "$1" == "logs" ]; then
 elif [ "$1" == "psql" ]; then
     docker exec -it productmaker-db-1 psql -U postgres -d productmaker
 elif [ "$1" == "restart" ]; then
-    docker compose restart
+    docker compose up -d
 elif [ "$1" == "stop" ]; then
     docker compose down
 elif [ "$1" == "--help" ] || [ "$1" == "-h" ] || [ "$1" == "help" ]; then

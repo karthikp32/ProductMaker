@@ -90,13 +90,32 @@ class PMAgent(BaseAgent):
         """
         logger.info(f"PM Agent: Deep Researching {topic}...")
         
-        # Use simple heuristic to determine if we should look for a customer segment specifically
-        # For now, we treat 'topic' as the customer segment or market area.
-        response = self.deep_research_client.research_customer_segment(topic)
+        # Use specialized research method for customer segments
+        response = self.research_customer_segment(topic)
         
         # In a real app, we would save 'response' to the DB here.
-        logger.info(f"PM Agent: Research result: {response}... (truncated)")
+        logger.info(f"PM Agent: Research result: {response[:100]}... (truncated)")
         # self.db.execute("INSERT INTO research_data ...")
+
+    def research_customer_segment(self, customer_segment: str) -> str:
+        """
+        Performs market research on a specific customer segment.
+        """
+        prompt = f"""
+        You are an expert Market Researcher.
+        Your goal is to gather deep insights about the following customer segment: "{customer_segment}".
+        
+        Please search for and analyze:
+        1.  Typical persona profiles and job titles.
+        2.  Core pain points and daily challenges.
+        3.  Existing solutions and their gaps.
+        4.  Where they hang out online (e.g., specific Subreddits, Forums, Discords).
+        5.  Willingness to pay for tools (look for pricing of similar tools).
+
+        Use your tools to search the web and visit promising pages.
+        Synthesize all your findings into a comprehensive report.
+        """
+        return self.deep_research_client.perform_research(prompt)
 
     def _generate_hypothesis(self, segment_name: str) -> dict:
         """
