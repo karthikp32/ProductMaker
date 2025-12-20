@@ -43,6 +43,15 @@ class InstructionRequest(BaseModel):
     instruction: str
     context: Optional[Dict[str, Any]] = {}
 
+class SegmentAnalysisRequest(BaseModel):
+    segment_name: str
+    industry: str
+    target_repo_path: Optional[str] = None
+
+class IndustryAnalysisRequest(BaseModel):
+    industry: str
+    target_repo_path: Optional[str] = None
+
 @app.post("/instruct/{agent_name}")
 async def instruct_agent(agent_name: str, request: InstructionRequest):
     agent_name = agent_name.lower()
@@ -59,6 +68,18 @@ async def instruct_agent(agent_name: str, request: InstructionRequest):
     event_bus.publish(event_type, payload)
     
     return {"status": "Instruction sent", "agent": agent_name}
+
+@app.post("/analyze-segment")
+async def analyze_segment(request: SegmentAnalysisRequest):
+    logger.info(f"API: Requesting analysis for segment: {request.segment_name}")
+    event_bus.publish("SEGMENT_ANALYSIS_REQUESTED", request.dict())
+    return {"status": "Analysis requested", "segment": request.segment_name}
+
+@app.post("/analyze-industry")
+async def analyze_industry(request: IndustryAnalysisRequest):
+    logger.info(f"API: Requesting industry analysis for: {request.industry}")
+    event_bus.publish("INDUSTRY_ANALYSIS_REQUESTED", request.dict())
+    return {"status": "Industry analysis requested", "industry": request.industry}
 
 @app.get("/agents")
 async def list_agents():

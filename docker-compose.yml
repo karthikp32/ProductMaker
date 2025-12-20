@@ -6,11 +6,14 @@ services:
     image: karthikp32/productmaker-app:latest
     volumes:
       - .:/app
+      - /home/karthik/repos:/home/karthik/repos
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/productmaker
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OPENROUTER_DEEPSEEK_R1_API_KEY=${OPENROUTER_DEEPSEEK_R1_API_KEY}
+    ports:
+      - "8080:8080"
     depends_on:
       - db
     command: tail -f /dev/null # Keep running for development
