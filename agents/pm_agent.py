@@ -54,20 +54,23 @@ class PMAgent(BaseAgent):
         segment_name = payload.get("segment_name")
         logger.info(f"PM Agent: Analyzing segment '{segment_name}'...")
         
-        # 1. Check Freshness
+        # 1. Check Freshness and run research if needed
+        research_findings = None
         is_fresh = self._check_data_freshness(segment_name)
         
         if not is_fresh:
             logger.info("PM Agent: Data stale or missing. Initiating Deep Research...")
-            self._run_deep_research(segment_name)
+            research_findings = self._run_deep_research(segment_name)
         else:
-            logger.info("PM Agent: Data fresh. Skipping research.")
+            logger.info("PM Agent: Data fresh. Fetching research from DB...")
+            # For demonstration, we'll just use a mock if 'fresh' for now
+            research_findings = "Existing research findings from DB..."
 
-        # 2. Generate Hypothesis
-        hypothesis_data = self._generate_hypothesis(segment_name)
+        # 2. Generate Hypotheses (using the research findings)
+        hypotheses = self._generate_hypothesis(segment_name, research_findings)
         
         # 3. Publish Spec
-        self.publish_event("SPEC_COMPLETED", {"spec": hypothesis_data})
+        self.publish_event("SPEC_COMPLETED", {"segment": segment_name, "hypotheses": hypotheses})
 
     def _check_data_freshness(self, segment_name: str) -> bool:
         """
@@ -84,7 +87,7 @@ class PMAgent(BaseAgent):
             return True
         return False
 
-    def _run_deep_research(self, topic: str):
+    def _run_deep_research(self, topic: str) -> str:
         """
         Uses DeepResearchClient to gather comprehensive information.
         """
@@ -96,6 +99,7 @@ class PMAgent(BaseAgent):
         # In a real app, we would save 'response' to the DB here.
         logger.info(f"PM Agent: Research result: {response[:100]}... (truncated)")
         # self.db.execute("INSERT INTO research_data ...")
+        return response
 
     def research_customer_segment(self, customer_segment: str) -> str:
         """
@@ -117,19 +121,33 @@ class PMAgent(BaseAgent):
         """
         return self.deep_research_client.perform_research(prompt)
 
-    def _generate_hypothesis(self, segment_name: str) -> dict:
+    def _generate_hypothesis(self, segment_name: str, research_findings: str) -> List[Dict[str, Any]]:
         """
-        Uses ReasoningModelClient to synthesize research and form a hypothesis.
+        Uses ReasoningModelClient to synthesize research and form 5 distinct hypotheses.
         """
-        logger.info(f"PM Agent: Generating hypothesis for {segment_name}...")
-        prompt = f"Based on general market knowledge (simulated), generate a product hypothesis for the segment: {segment_name}. Include the hypothesis and 3 key features."
+        logger.info(f"PM Agent: Generating 5 hypotheses for {segment_name}...")
         
-        response = self.reasoning_client.generate(prompt, system_prompt="You are a Visionary Product Leader.")
+        prompt = f"""
+        Based on the follow market research findings for the customer segment '{segment_name}', 
+        generate 5 distinct and innovative product hypotheses.
+
+        **Market Research Findings:**
+        {research_findings}
+
+        **Instructions:**
+        1. Each hypothesis should solve a specific pain point identified in the research.
+        2. For each hypothesis, provide:
+           - A catchy Name
+           - The Core Problem it solves
+           - The Value Proposition
+           - 3 Key Features
+        3. Ensure the hypotheses range from 'incremental' to 'disruptive'.
+
+        Return the response as a structured list.
+        """
         
-        # Simple parsing logic (mocked structure for the LLM response)
-        # In production, we'd ask for JSON output or structure the text carefully.
-        return {
-            "segment": segment_name,
-            "hypothesis_summary": response[:200], # Storing a snippet of the reasoning
-            "full_analysis": response
-        }
+        response = self.reasoning_client.generate(prompt, system_prompt="You are a Visionary Product Leader and Strategist.")
+        
+        # In a real app, we'd parse this into a list of objects.
+        # For now, we return the raw response in a list wrapper or simple split.
+        return [{"segment": segment_name, "analysis": response}]
