@@ -7,6 +7,7 @@ services:
     volumes:
       - .:/app
       - /home/karthik/repos:/home/karthik/repos
+      - /home/karthik/repos:/root/repos
     environment:
       - DATABASE_URL=postgresql://postgres:password@db:5432/productmaker
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -16,7 +17,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
-    command: tail -f /dev/null # Keep running for development
+    command: uvicorn api:app --host 0.0.0.0 --port 8080
 
   db:
     image: pgvector/pgvector:pg16

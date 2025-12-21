@@ -1,3 +1,4 @@
+import os
 import logging
 import json
 import time
@@ -13,7 +14,9 @@ class EventBus:
     """
     A persistent Event Bus backed by PostgreSQL 'task_queue' table.
     """
-    def __init__(self, db_url: str = "postgresql://postgres:password@localhost:5432/productmaker"):
+    def __init__(self, db_url: str = None):
+        if db_url is None:
+            db_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432/productmaker")
         self.db_url = db_url
         self._subscribers: Dict[str, List[Callable]] = {}
         # In a real system, we'd have a separate worker loop polling this.

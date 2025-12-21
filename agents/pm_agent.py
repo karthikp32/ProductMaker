@@ -30,8 +30,9 @@ class PMAgent(BaseAgent):
 
     def setup_subscriptions(self):
         self.event_bus.subscribe("SYSTEM_START", self.on_system_start)
-        self.event_bus.subscribe("SEGMENT_ANALYSIS_REQUESTED", self.on_segment_request)
-        self.event_bus.subscribe("INDUSTRY_ANALYSIS_REQUESTED", self.on_industry_request)
+        # These can still be triggered by events, but are now primarily called by the API directly
+        self.event_bus.subscribe("SEGMENT_ANALYSIS_REQUESTED", self.analyze_segment)
+        self.event_bus.subscribe("INDUSTRY_ANALYSIS_REQUESTED", self.analyze_industry)
 
     def handle_instruction(self, instruction: str, context: Dict[str, Any]):
         if "deep dive" in instruction.lower() or "market research" in instruction.lower():
@@ -49,7 +50,7 @@ class PMAgent(BaseAgent):
     def on_system_start(self, payload: Any):
         logger.info("PM Agent online. Waiting for instructions.")
 
-    def on_segment_request(self, payload: Any):
+    def analyze_segment(self, payload: Any):
         segment_name = payload.get("segment_name")
         target_repo_path = payload.get("target_repo_path")
         industry = payload.get("industry", "General")
@@ -125,7 +126,7 @@ class PMAgent(BaseAgent):
                 
         return result_paths
 
-    def on_industry_request(self, payload: Any):
+    def analyze_industry(self, payload: Any):
         industry = payload.get("industry")
         target_repo_path = payload.get("target_repo_path")
         

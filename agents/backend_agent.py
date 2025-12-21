@@ -8,6 +8,13 @@ class BackendAgent(BaseAgent):
     """
     Backend SWE Agent: Owns the 'Logic'.
     """
+    @property
+    def role(self) -> str:
+        return "Backend Engineer: Implementation of APIs and business logic."
+
+    @property
+    def functions(self) -> list:
+        return []
     def setup_subscriptions(self):
         self.event_bus.subscribe("ARCHITECTURE_APPROVED", self.on_architecture_approved)
 

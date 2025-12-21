@@ -8,6 +8,13 @@ class FrontendAgent(BaseAgent):
     """
     Frontend SWE Agent: Owns the 'Interaction'.
     """
+    @property
+    def role(self) -> str:
+        return "Frontend Engineer: UX/UI design and implementation."
+
+    @property
+    def functions(self) -> list:
+        return []
     def setup_subscriptions(self):
         self.event_bus.subscribe("ARCHITECTURE_APPROVED", self.on_architecture_approved)
 

@@ -8,6 +8,13 @@ class ArchitectAgent(BaseAgent):
     """
     Backend System Design Agent: Owns the 'Structure'.
     """
+    @property
+    def role(self) -> str:
+        return "Software Architect: Designs system architecture and database schemas."
+
+    @property
+    def functions(self) -> list:
+        return []
     def setup_subscriptions(self):
         self.event_bus.subscribe("DESIGN_COMPLETED", self.on_design_completed)
 

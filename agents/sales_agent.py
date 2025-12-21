@@ -8,6 +8,13 @@ class SalesAgent(BaseAgent):
     """
     Sales Agent: Owns 'Conversion'.
     """
+    @property
+    def role(self) -> str:
+        return "Sales Representative: Lead engagement and conversion."
+
+    @property
+    def functions(self) -> list:
+        return []
     def setup_subscriptions(self):
         self.event_bus.subscribe("LEAD_GENERATED", self.on_lead_generated)
 

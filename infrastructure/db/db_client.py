@@ -11,14 +11,17 @@ class DBClient:
     """
     def __init__(self):
         self.conn = None
+        db_url = os.getenv("DATABASE_URL")
         try:
-            # In a real app, use env vars. For V0, we default to docker-compose values.
-            self.conn = psycopg2.connect(
-                host=os.getenv("POSTGRES_HOST", "localhost"),
-                database=os.getenv("POSTGRES_DB", "productmaker"),
-                user=os.getenv("POSTGRES_USER", "user"),
-                password=os.getenv("POSTGRES_PASSWORD", "password")
-            )
+            if db_url:
+                self.conn = psycopg2.connect(db_url)
+            else:
+                self.conn = psycopg2.connect(
+                    host=os.getenv("POSTGRES_HOST", "db"),
+                    database=os.getenv("POSTGRES_DB", "productmaker"),
+                    user=os.getenv("POSTGRES_USER", "postgres"),
+                    password=os.getenv("POSTGRES_PASSWORD", "password")
+                )
             logger.info("Connected to Database.")
         except Exception as e:
             logger.error(f"Failed to connect to Database: {e}")

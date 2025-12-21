@@ -8,6 +8,13 @@ class MarketingAgent(BaseAgent):
     """
     Marketing Agent: Owns 'Awareness'.
     """
+    @property
+    def role(self) -> str:
+        return "Marketing Strategist: Campaign design and execution."
+
+    @property
+    def functions(self) -> list:
+        return []
     def setup_subscriptions(self):
         self.event_bus.subscribe("MVP_DEPLOYED", self.on_mvp_deployed)
 

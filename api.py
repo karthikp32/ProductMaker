@@ -1,12 +1,11 @@
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 from infrastructure.event_bus import EventBus
 from core.orchestrator import Orchestrator
 from agents.pm_agent import PMAgent
-from agents.designer_agent import DesignerAgent
 from agents.architect_agent import ArchitectAgent
 from agents.frontend_agent import FrontendAgent
 from agents.backend_agent import BackendAgent
@@ -25,9 +24,9 @@ event_bus = EventBus()
 orchestrator = Orchestrator(event_bus)
 
 # Initialize Agents
+pm_agent = PMAgent("pm", event_bus)
 agents = {
-    "pm": PMAgent("pm", event_bus),
-    "designer": DesignerAgent("designer", event_bus),
+    "pm": pm_agent,
     "architect": ArchitectAgent("architect", event_bus),
     "frontend": FrontendAgent("frontend", event_bus),
     "backend": BackendAgent("backend", event_bus),
@@ -70,16 +69,16 @@ async def instruct_agent(agent_name: str, request: InstructionRequest):
     return {"status": "Instruction sent", "agent": agent_name}
 
 @app.post("/analyze-segment")
-async def analyze_segment(request: SegmentAnalysisRequest):
+async def analyze_segment(request: SegmentAnalysisRequest, background_tasks: BackgroundTasks):
     logger.info(f"API: Requesting analysis for segment: {request.segment_name}")
-    event_bus.publish("SEGMENT_ANALYSIS_REQUESTED", request.dict())
-    return {"status": "Analysis requested", "segment": request.segment_name}
+    background_tasks.add_task(pm_agent.analyze_segment, request.dict())
+    return {"status": "Analysis started in background", "segment": request.segment_name}
 
 @app.post("/analyze-industry")
-async def analyze_industry(request: IndustryAnalysisRequest):
+async def analyze_industry(request: IndustryAnalysisRequest, background_tasks: BackgroundTasks):
     logger.info(f"API: Requesting industry analysis for: {request.industry}")
-    event_bus.publish("INDUSTRY_ANALYSIS_REQUESTED", request.dict())
-    return {"status": "Industry analysis requested", "industry": request.industry}
+    background_tasks.add_task(pm_agent.analyze_industry, request.dict())
+    return {"status": "Industry analysis started in background", "industry": request.industry}
 
 @app.get("/agents")
 async def list_agents():

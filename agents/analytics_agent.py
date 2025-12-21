@@ -8,6 +8,13 @@ class AnalyticsAgent(BaseAgent):
     """
     Analytics Agent: Owns 'Truth'.
     """
+    @property
+    def role(self) -> str:
+        return "Data Analyst: Experiment analysis and reporting."
+
+    @property
+    def functions(self) -> list:
+        return []
     def setup_subscriptions(self):
         self.event_bus.subscribe("EXPERIMENT_ENDED", self.on_experiment_ended)
 
