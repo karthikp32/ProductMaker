@@ -42,7 +42,7 @@ class PMAgent(BaseAgent):
             topic = topic.strip()
             
             logger.info(f"PM Agent: Starting Deep Dive on '{topic}'...")
-            self._run_deep_research(topic)
+            self.research_customer_segment(topic)
             self.publish_event("RESEARCH_COMPLETED", {"topic": topic, "findings": f"Research on {topic} completed."})
         else:
             logger.warning(f"PM Agent: Unknown instruction: {instruction}")
@@ -58,7 +58,7 @@ class PMAgent(BaseAgent):
         logger.info(f"PM Agent: Analyzing segment '{segment_name}' for industry '{industry}'...")
         
         # 1. Run Research
-        research_findings = self._run_deep_research(segment_name)
+        research_findings = self.research_customer_segment(segment_name)
 
         # 2. Generate Hypotheses
         hypotheses_data = self._generate_hypothesis(segment_name, research_findings)
@@ -130,26 +130,238 @@ class PMAgent(BaseAgent):
         industry = payload.get("industry")
         target_repo_path = payload.get("target_repo_path")
         
-        logger.info(f"PM Agent: Initiating high-level analysis for Industry: '{industry}'...")
+        logger.info(f"PM Agent: Initiating end-to-end analysis for Industry: '{industry}'...")
         
         # 1. Broad Market Research for the Industry
-        research_findings = self._analyze_industry_landscape(industry)
+        landscape_findings = self._analyze_industry_landscape(industry)
         
         # 2. Prioritization & Economic Deep Dive
-        prioritization_report = self._prioritize_segments(industry, research_findings)
+        prioritization_report = self._prioritize_segments(industry, landscape_findings)
         
-        # 3. Persist Industry Report
+        # 3. Save the High-Level Report
         report_paths = self._persist_industry_report(
             industry=industry,
-            research_findings=research_findings,
+            research_findings=landscape_findings,
             prioritization_report=prioritization_report,
             target_repo_path=target_repo_path
         )
         
-        self.publish_event("INDUSTRY_SPEC_COMPLETED", {
+        # 4. Prepare Top 2 Segments with YAML Contexts
+        segment_deep_dives = self._prepare_segment_deep_dives(industry, landscape_findings, prioritization_report)
+        logger.info(f"PM Agent: Prepared {len(segment_deep_dives)} segment deep-dives.")
+        
+        # 5. Process each segment
+        for dive in segment_deep_dives:
+            segment_name = dive.get("name")
+            segment_yaml_context = dive.get("yaml_context")
+            
+            logger.info(f"PM Agent: Starting deep-dive for segment: {segment_name}")
+            
+            # 5a. Segment Research
+            segment_research = self.research_customer_segment(segment_name)
+            
+            # 5b. Generate 5 Hypotheses using the YAML context
+            hypotheses = self._generate_hypothesis(segment_name, segment_research, segment_yaml_context)
+            
+            # 5c. Save the collective Hypotheses document for this segment
+            # We include the YAML context in the document for transparency
+            self._persist_segment_hypotheses_doc(
+                industry=industry,
+                segment=segment_name,
+                hypotheses=hypotheses,
+                research_findings=segment_research,
+                yaml_context=segment_yaml_context,
+                target_repo_path=target_repo_path
+            )
+            
+            # 5d. For each hypothesis, generate a full PRD
+            for hyp in hypotheses:
+                logger.info(f"PM Agent: Generating PRD for hypothesis: {hyp.get('name', 'Idea')}")
+                prd_content = self._generate_prd(industry, segment_name, hyp, segment_research, segment_yaml_context)
+                
+                # 5e. Persist individual PRD
+                self._persist_segment_prd(
+                    industry=industry,
+                    segment=segment_name,
+                    hypothesis_name=hyp.get('name', 'Idea'),
+                    research_findings=segment_research,
+                    prd_content=prd_content,
+                    target_repo_path=target_repo_path
+                )
+        
+        self.publish_event("INDUSTRY_WORKFLOW_COMPLETED", {
             "industry": industry,
-            "saved_files": report_paths
+            "segments_processed": [d.get("name") for d in segment_deep_dives]
         })
+
+    def _prepare_segment_deep_dives(self, industry: str, landscape_research: str, prioritization_report: str) -> List[Dict[str, Any]]:
+        """
+        Uses LLM to pick top 2 segments and create YAML contexts for them.
+        Returns a list of segments with their name and yaml context.
+        """
+        prompt = f"""
+        Given the industry '{industry}', analyze the research and prioritization report below.
+        1. Select the TOP 2 most promising customer segments.
+        2. For each, create a concise 'Segment Strategic Context' in YAML format.
+        
+        **Prioritization Report:**
+        {prioritization_report}
+        
+        **Landscape Research:**
+        {landscape_research[:4000]}
+        
+        **Output Format (Strictly follow this for 2 segments):**
+        ---
+        NAME: [Exact Segment Name]
+        YAML:
+        [YAML Context Here]
+        ---
+        """
+        response = self.reasoning_client.generate(prompt, system_prompt="You are a Strategic Analyst.")
+        
+        dives = []
+        try:
+            logger.info(f"PM Agent: Received strategy response: {response[:200]}...")
+            
+            # Simple manual parser for the delimited format
+            blocks = response.split("---")
+            for block in blocks:
+                block = block.strip()
+                if not block: continue
+                
+                if "NAME:" in block:
+                    name = ""
+                    yaml_content = []
+                    is_yaml = False
+                    
+                    for line in block.split("\n"):
+                        clean_line = line.strip()
+                        if clean_line.upper().startswith("NAME:"):
+                            name = clean_line[5:].strip().strip("[]").strip()
+                        elif clean_line.upper().startswith("YAML:"):
+                            is_yaml = True
+                        elif is_yaml:
+                            yaml_content.append(line) # Keep original line for YAML indentation
+                    
+                    if name:
+                        yaml_str = "\n".join(yaml_content).strip()
+                        if not yaml_str:
+                             yaml_str = "context: No specific context provided."
+                             
+                        dives.append({
+                            "name": name,
+                            "yaml_context": yaml_str
+                        })
+                        logger.info(f"PM Agent: Extracted segment: {name}")
+            
+            if not dives:
+                logger.warning("PM Agent: Manual segment parsing failed. Trying one last heuristic.")
+                # Heuristic: split by lines and look for "NAME:" anywhere
+                for line in response.split("\n"):
+                    if "NAME:" in line.upper() and len(dives) < 2:
+                        name = line.split(":", 1)[1].strip().strip("[]").strip()
+                        if name:
+                            dives.append({"name": name, "yaml_context": "context: Extracted via fallback."})
+                
+        except Exception as e:
+            logger.error(f"Failed to prepare segment deep-dives: {e}")
+            
+        return dives[:2]
+
+    def _generate_prd(self, industry: str, segment: str, hypothesis: Dict[str, Any], research_findings: str, yaml_context: str = "") -> str:
+        prompt = f"""
+        You are a Senior Product Manager. Write a detailed Product Requirements Document (PRD).
+
+        **Context:**
+        Industry: {industry}
+        Target Segment: {segment}
+        Segment Strategy (YAML): 
+        {yaml_context}
+        
+        **Product Concept:**
+        - Name: {hypothesis.get('name', 'New Tool')}
+        - Problem: {hypothesis.get('problem', 'See research')}
+        - Value Prop: {hypothesis.get('value_prop', 'See research')}
+        - Key Features: {hypothesis.get('features', [])}
+        
+        **Detailed Research Findings:**
+        {research_findings}
+        
+        **PRD Structure Requirements:**
+        1. **Overview**: Briefly describe what this product is and why it is being built.
+        2. **Success Metrics**: Define the key metrics (KPIs) for internal goals.
+        3. **Personas**: Identify target personas; specify the Primary Persona.
+        4. **User Scenarios**: End-to-end stories of personas using the product in real contexts.
+        5. **User Stories / Features / Requirements**: Prioritized features with justifications.
+        6. **Features Out (Non-Goals)**: What is intentionally excluded and why.
+        7. **Open Issues**: Unresolved questions, risks, or areas for research.
+        
+        Format in professional Markdown.
+        """
+        return self.reasoning_client.generate(prompt, system_prompt="You are an Elite Product Manager at a Tier-1 Tech Firm.")
+
+    def _persist_segment_prd(self, industry: str, segment: str, hypothesis_name: str, research_findings: str, prd_content: str, target_repo_path: str = None):
+        safe_industry = industry.replace(" ", "_").lower()
+        safe_segment = segment.replace(" ", "_").lower()
+        safe_hyp = hypothesis_name.replace(" ", "_").lower().replace("/", "_")
+        
+        local_dir = os.path.join("output", safe_industry, safe_segment, "prds")
+        os.makedirs(local_dir, exist_ok=True)
+        
+        prd_file = os.path.join(local_dir, f"prd_{safe_hyp}.md")
+        research_file = os.path.join(local_dir, "segment_research.md")
+        
+        with open(prd_file, "w") as f: f.write(prd_content)
+        if not os.path.exists(research_file):
+            with open(research_file, "w") as f: f.write(research_findings)
+        
+        if target_repo_path:
+            target_repo_path = os.path.expanduser(target_repo_path)
+            repo_prd_dir = os.path.join(target_repo_path, "product_documents", safe_industry, safe_segment)
+            try:
+                os.makedirs(repo_prd_dir, exist_ok=True)
+                shutil.copy(prd_file, os.path.join(repo_prd_dir, f"prd_{safe_hyp}.md"))
+                if not os.path.exists(os.path.join(repo_prd_dir, "market_research.md")):
+                    shutil.copy(research_file, os.path.join(repo_prd_dir, "market_research.md"))
+            except Exception as e:
+                logger.error(f"PM Agent: Failed to copy PRD to repo: {e}")
+
+    def _persist_segment_hypotheses_doc(self, industry: str, segment: str, hypotheses: List[Dict[str, Any]], research_findings: str, yaml_context: str = "", target_repo_path: str = None):
+        safe_industry = industry.replace(" ", "_").lower()
+        safe_segment = segment.replace(" ", "_").lower()
+        
+        local_dir = os.path.join("output", safe_industry, safe_segment)
+        os.makedirs(local_dir, exist_ok=True)
+        
+        hyp_file = os.path.join(local_dir, "product_hypotheses.md")
+        
+        content = f"# Product Hypotheses for {segment}\n\n"
+        content += "## Segment Strategic Context (YAML)\n"
+        content += "```yaml\n" + yaml_context + "\n```\n\n"
+        content += "## Research Summary\n"
+        content += research_findings[:2000] + "...\n\n"
+        content += "## Hypotheses\n\n"
+        
+        for i, hyp in enumerate(hypotheses, 1):
+            content += f"### {i}. {hyp.get('name')}\n"
+            content += f"**Problem:** {hyp.get('problem')}\n\n"
+            content += f"**Value Prop:** {hyp.get('value_prop')}\n\n"
+            content += "**Key Features:**\n"
+            for feat in hyp.get("features", []):
+                content += f"- {feat}\n"
+            content += "\n---\n\n"
+            
+        with open(hyp_file, "w") as f:
+            f.write(content)
+            
+        if target_repo_path:
+            target_repo_path = os.path.expanduser(target_repo_path)
+            repo_dir = os.path.join(target_repo_path, "product_documents", safe_industry, safe_segment)
+            try:
+                os.makedirs(repo_dir, exist_ok=True)
+                shutil.copy(hyp_file, os.path.join(repo_dir, "product_hypotheses.md"))
+            except Exception as e:
+                logger.error(f"PM Agent: Failed to copy hypotheses doc: {e}")
 
     def _analyze_industry_landscape(self, industry: str) -> str:
         """
@@ -227,11 +439,6 @@ class PMAgent(BaseAgent):
         result = self.db.fetch_one(query, (segment_name,))
         return True if result else False
 
-    def _run_deep_research(self, topic: str) -> str:
-        logger.info(f"PM Agent: Deep Researching {topic}...")
-        response = self.research_customer_segment(topic)
-        logger.info(f"PM Agent: Research result: {response[:100]}... (truncated)")
-        return response
 
     def research_customer_segment(self, customer_segment: str) -> str:
         prompt = f"""
@@ -250,27 +457,38 @@ class PMAgent(BaseAgent):
         """
         return self.deep_research_client.perform_research(prompt)
 
-    def _generate_hypothesis(self, segment_name: str, research_findings: str) -> List[Dict[str, Any]]:
-        logger.info(f"PM Agent: Generating 5 hypotheses for {segment_name}...")
+    def _generate_hypothesis(self, segment_name: str, research_findings: str, yaml_context: str = "") -> List[Dict[str, Any]]:
+        logger.info(f"PM Agent: Generating structured hypotheses for {segment_name}...")
         
         prompt = f"""
-        Based on the follow market research findings for the customer segment '{segment_name}', 
-        generate 5 distinct and innovative product hypotheses.
+        Based on the segment context (YAML) and market research below, generate 5 distinct product ideas ranging from incremental to disruptive.
+        
+        **Segment Context (YAML):**
+        {yaml_context}
 
-        **Market Research Findings:**
+        **Research Findings:**
         {research_findings}
 
-        **Instructions:**
-        1. Each hypothesis should solve a specific pain point identified in the research.
-        2. For each hypothesis, provide:
-           - A catchy Name
-           - The Core Problem it solves
-           - The Value Proposition
-           - 3 Key Features
-        3. Ensure the hypotheses range from 'incremental' to 'disruptive'.
-
-        Return the response as a structured list.
+        **Output Requirement:**
+        Return ONLY a JSON list of objects: 
+        [
+          {{
+            "name": "Catchy name",
+            "problem": "Core pain point",
+            "value_prop": "Value proposition",
+            "features": ["Feature 1", "Feature 2", "Feature 3"]
+          }},
+          ...
+        ]
         """
         
-        response = self.reasoning_client.generate(prompt, system_prompt="You are a Visionary Product Leader and Strategist.")
-        return [{"segment": segment_name, "analysis": response}]
+        response = self.reasoning_client.generate(prompt, system_prompt="You are a Visionary Product Strategist. Output JSON.")
+        try:
+            import json
+            clean_res = response.strip()
+            if "```json" in clean_res: clean_res = clean_res.split("```json")[-1].split("```")[0]
+            elif "```" in clean_res: clean_res = clean_res.split("```")[-1].split("```")[0]
+            return json.loads(clean_res)
+        except Exception as e:
+            logger.error(f"Failed to parse hypotheses: {e}")
+            return [{"name": "Standard Solution", "problem": "Inefficiency", "value_prop": "Automated workflows", "features": ["Feature A", "Feature B"]}]
