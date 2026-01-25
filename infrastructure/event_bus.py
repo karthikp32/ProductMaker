@@ -46,13 +46,11 @@ class EventBus:
             conn.commit()
             cur.close()
             conn.close()
-            
-            # OPTIONAL: For V0 simplicity, also trigger in-memory subscribers immediately
-            # so we don't strictly *need* a separate poller process running yet.
-            self._notify_local_subscribers(event_type, payload)
-            
         except Exception as e:
             logger.error(f"Failed to publish event to DB: {e}")
+        
+        # Always trigger in-memory subscribers for V0 robustness
+        self._notify_local_subscribers(event_type, payload)
 
     def _notify_local_subscribers(self, event_type: str, payload: Any):
         if event_type in self._subscribers:
