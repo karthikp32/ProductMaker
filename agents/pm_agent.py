@@ -160,7 +160,7 @@ class PMAgent(BaseAgent):
             # 5a. Segment Research
             segment_research = self.research_customer_segment(segment_name)
             
-            # 5b. Generate 5 Hypotheses using the YAML context
+            # 5b. Generate 3 Hypotheses using the YAML context
             hypotheses = self._generate_hypothesis(segment_name, segment_research, segment_yaml_context)
             
             # 5c. Save the collective Hypotheses document for this segment
@@ -188,6 +188,14 @@ class PMAgent(BaseAgent):
                     prd_content=prd_content,
                     target_repo_path=target_repo_path
                 )
+                
+                # 5f. Notify Architect
+                self.publish_event("PRD_COMPLETED", {
+                    "prd_content": prd_content,
+                    "project_name": hyp.get('name', f"{segment_name} Tool"),
+                    "industry": industry,
+                    "segment": segment_name
+                })
         
         self.publish_event("INDUSTRY_WORKFLOW_COMPLETED", {
             "industry": industry,
@@ -255,13 +263,34 @@ class PMAgent(BaseAgent):
                         logger.info(f"PM Agent: Extracted segment: {name}")
             
             if not dives:
-                logger.warning("PM Agent: Manual segment parsing failed. Trying one last heuristic.")
+                logger.warning("PM Agent: Manual segment parsing failed. Trying heuristic search for 'NAME:' and 'YAML:'.")
                 # Heuristic: split by lines and look for "NAME:" anywhere
+                current_dive = {}
+                in_yaml = False
+                yaml_lines = []
                 for line in response.split("\n"):
-                    if "NAME:" in line.upper() and len(dives) < 2:
-                        name = line.split(":", 1)[1].strip().strip("[]").strip()
-                        if name:
-                            dives.append({"name": name, "yaml_context": "context: Extracted via fallback."})
+                    upper_line = line.strip().upper()
+                    if upper_line.startswith("NAME:"):
+                        if current_dive.get("name") and yaml_lines:
+                            current_dive["yaml_context"] = "\n".join(yaml_lines).strip()
+                            dives.append(current_dive)
+                            current_dive = {}
+                        current_dive["name"] = line.split(":", 1)[1].strip().strip("[]").strip()
+                        yaml_lines = []
+                        in_yaml = False
+                    elif upper_line.startswith("YAML:"):
+                        in_yaml = True
+                    elif in_yaml:
+                        yaml_lines.append(line)
+                
+                if current_dive.get("name") and yaml_lines:
+                    current_dive["yaml_context"] = "\n".join(yaml_lines).strip()
+                    dives.append(current_dive)
+                    
+                if not dives:
+                    logger.error("PM Agent: All segment parsing failed. The industry workflow will likely stop here.")
+                else:
+                    logger.info(f"PM Agent: Heuristic extraction found {len(dives)} segments.")
                 
         except Exception as e:
             logger.error(f"Failed to prepare segment deep-dives: {e}")
@@ -461,7 +490,7 @@ class PMAgent(BaseAgent):
         logger.info(f"PM Agent: Generating structured hypotheses for {segment_name}...")
         
         prompt = f"""
-        Based on the segment context (YAML) and market research below, generate 5 distinct product ideas ranging from incremental to disruptive.
+        Based on the segment context (YAML) and market research below, generate 3 distinct product ideas ranging from incremental to disruptive.
         
         **Segment Context (YAML):**
         {yaml_context}
