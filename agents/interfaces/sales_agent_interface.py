@@ -1,16 +1,24 @@
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List
 from core.base_agent import BaseAgent
 
 class SalesAgentInterface(BaseAgent):
     """
     Abstract interface for the Sales Agent.
-    Responsible for outbound prospecting, drafting emails, and managing leads.
+    Responsible for qualifying leads and driving bottom-of-funnel conversions.
     """
 
     @abstractmethod
-    def generate_outreach_copy(self, lead_context: Dict[str, Any]) -> str:
+    def qualify_lead(self, handoff_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Draft a sales email or message for a specific lead context.
+        Evaluate a lead based on BANT (Budget, Authority, Need, Timeline) or similar criteria.
+        Returns a qualification report and recommended actions.
+        """
+        pass
+
+    @abstractmethod
+    def execute_sales_action(self, action_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a specific sales action such as sending an email or scheduling a meeting.
         """
         pass
