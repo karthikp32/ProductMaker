@@ -406,7 +406,7 @@ class PMAgent(BaseAgent):
 
     def _persist_industry_report(self, industry: str, research_findings: str, prioritization_report: str, target_repo_path: str = None) -> Dict[str, str]:
         safe_industry = industry.replace(" ", "_").lower()
-        local_output_dir = os.path.join("output", safe_industry, "market_landscape")
+        local_output_dir = os.path.join("output", safe_industry, "product")
         os.makedirs(local_output_dir, exist_ok=True)
         
         research_file = os.path.join(local_output_dir, "landscape_research.md")
@@ -423,7 +423,7 @@ class PMAgent(BaseAgent):
         
         if target_repo_path:
             target_repo_path = os.path.expanduser(target_repo_path)
-            repo_doc_dir = os.path.join(target_repo_path, "product_documents", "market_landscape")
+            repo_doc_dir = os.path.join(target_repo_path, "product_documents", "product")
             try:
                 os.makedirs(repo_doc_dir, exist_ok=True)
                 shutil.copy(research_file, os.path.join(repo_doc_dir, "landscape_research.md"))
