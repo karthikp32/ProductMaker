@@ -1,0 +1,21 @@
+# CodeRabbit Configuration
+version: "1.0"
+
+reviews:
+  # Enables reviews for every pull request
+  enabled: true
+  # Ensures CodeRabbit triggers on every new commit pushed to the PR
+  automatic_reviews: true
+  # Provides a summary of changes in addition to line-by-line comments
+  chatty: true
+
+# Instructions to fine-tune the AI's focus
+instructions: |
+  Focus on code quality, security vulnerabilities, and adherence to 
+  clean code principles. Please review every change in detail.
+
+# Optional: Prevent reviews on specific branches (like 'main' or 'develop')
+# if you only want reviews on feature branches.
+# target_branches:
+#   - "feature/*"
+#   - "bugfix/*"
