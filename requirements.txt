@@ -7,6 +7,8 @@ fastapi
 uvicorn
 click
 requests
+httpx
+stripe
 google-generativeai
 smolagents
 duckduckgo-search
