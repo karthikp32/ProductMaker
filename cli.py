@@ -87,5 +87,24 @@ def analyze_industry():
         click.echo(f"Error: {e}")
         sys.exit(1)
 
+@cli.command()
+def build_frontend():
+    """Builds frontend from designs via Frontend Agent."""
+    industry = click.prompt("Enter the Industry (e.g., Gaming)")
+    
+    url = f"{API_URL}/instruct/frontend"
+    payload = {
+        "instruction": "Build frontend",
+        "context": {"industry": industry}
+    }
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        click.echo(f"Success: {response.json()}")
+    except requests.exceptions.RequestException as e:
+        click.echo(f"Error: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
     cli()
+

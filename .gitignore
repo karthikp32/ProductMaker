@@ -1,2 +1,9 @@
 *.pyc
 *.env
+node_modules/
+output/
+__pycache__/
+.venv/
+dist/
+build/
+.DS_Store
