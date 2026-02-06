@@ -68,6 +68,21 @@ OAuth buttons only render when `import.meta.env.PROD` is true. Configure the bac
 VITE_API_BASE_URL=http://localhost:8080
 ```
 
+To enable Stripe checkout buttons, set:
+
+```sh
+VITE_STRIPE_CHECKOUT_ENABLED=true
+```
+
+Backend billing env vars:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PRICE_ID_FOUNDER`
+- `STRIPE_PRICE_ID_GROWTH`
+- `STRIPE_PRICE_ID_FOUNDRY_PACK`
+- `STRIPE_SUCCESS_URL` / `STRIPE_CANCEL_URL`
+- `STRIPE_WEBHOOK_SECRET` (optional)
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.

@@ -94,11 +94,13 @@ OAUTH_CONFIG = {
     },
 }
 
-FREE_USAGE_LIMIT = int(os.getenv("FREE_USAGE_LIMIT", "5"))
+FREE_USAGE_LIMIT = int(os.getenv("FREE_USAGE_LIMIT", "10"))
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", str(60 * 60 * 24)))
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID", "")
+STRIPE_PRICE_ID_FOUNDER = os.getenv("STRIPE_PRICE_ID_FOUNDER", "")
+STRIPE_PRICE_ID_GROWTH = os.getenv("STRIPE_PRICE_ID_GROWTH", "")
+STRIPE_PRICE_ID_FOUNDRY_PACK = os.getenv("STRIPE_PRICE_ID_FOUNDRY_PACK", "")
 STRIPE_SUCCESS_URL = os.getenv("STRIPE_SUCCESS_URL", f"{frontend_base_url}/success")
 STRIPE_CANCEL_URL = os.getenv("STRIPE_CANCEL_URL", f"{frontend_base_url}/billing")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -263,6 +265,7 @@ async def oauth_callback(provider: str, code: Optional[str] = None, state: Optio
         "provider": provider,
         "paid": False,
         "remaining": FREE_USAGE_LIMIT,
+        "credits": FREE_USAGE_LIMIT,
         "created_at": time.time(),
         "expires_at": time.time() + SESSION_TTL_SECONDS,
     }
@@ -279,20 +282,38 @@ async def consume_usage(user: Dict[str, Any] = Depends(get_current_user)):
         if user["remaining"] <= 0:
             raise HTTPException(status_code=402, detail="Free usage limit reached")
         user["remaining"] -= 1
-    return {"paid": user["paid"], "remaining": user["remaining"]}
+        user["credits"] = user["remaining"]
+    else:
+        if user["credits"] <= 0:
+            raise HTTPException(status_code=402, detail="Credits exhausted")
+        user["credits"] -= 1
+    return {"paid": user["paid"], "remaining": user["remaining"], "credits": user["credits"]}
+
+class CheckoutRequest(BaseModel):
+    plan: str
+
+PLAN_CONFIG = {
+    "founder": {"price_id": STRIPE_PRICE_ID_FOUNDER, "mode": "subscription", "credits": 40},
+    "growth": {"price_id": STRIPE_PRICE_ID_GROWTH, "mode": "subscription", "credits": 150},
+    "foundry-pack": {"price_id": STRIPE_PRICE_ID_FOUNDRY_PACK, "mode": "payment", "credits": 130},
+}
 
 @app.post("/billing/checkout")
-async def create_checkout(user: Dict[str, Any] = Depends(get_current_user)):
-    if not stripe.api_key or not STRIPE_PRICE_ID:
+async def create_checkout(payload: CheckoutRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    if not stripe.api_key:
         raise HTTPException(status_code=500, detail="Stripe is not configured")
 
+    plan = PLAN_CONFIG.get(payload.plan)
+    if not plan or not plan["price_id"]:
+        raise HTTPException(status_code=400, detail="Unknown or unconfigured plan")
+
     session = stripe.checkout.Session.create(
-        mode="subscription",
-        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+        mode=plan["mode"],
+        line_items=[{"price": plan["price_id"], "quantity": 1}],
         success_url=STRIPE_SUCCESS_URL,
         cancel_url=STRIPE_CANCEL_URL,
         client_reference_id=user["id"],
-        metadata={"user_id": user["id"]},
+        metadata={"user_id": user["id"], "plan": payload.plan, "credits": plan["credits"]},
     )
     return {"id": session.id, "url": session.url}
 
@@ -314,10 +335,17 @@ async def stripe_webhook(request: Request):
     if event["type"] == "checkout.session.completed":
         session_obj = event["data"]["object"]
         user_id = session_obj.get("client_reference_id")
+        credits = 0
+        try:
+            credits = int(session_obj.get("metadata", {}).get("credits", 0))
+        except (TypeError, ValueError):
+            credits = 0
         for token, data in sessions.items():
             if data["id"] == user_id:
                 data["paid"] = True
-                data["remaining"] = FREE_USAGE_LIMIT
+                if credits:
+                    data["credits"] = credits
+                    data["remaining"] = credits
                 break
     return {"status": "ok"}
 
