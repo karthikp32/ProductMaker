@@ -1,0 +1,451 @@
+{
+    "product_idea": {
+        "title": "AthleteDash - Performance Analytics Dashboard",
+        "description": "A comprehensive performance tracking and analytics platform for athletes to monitor training, analyze metrics, and receive AI-powered insights for improvement.",
+        "target_users": "Individual athletes, personal trainers, and sports coaches"
+    },
+    "functional_requirements": [
+        {
+            "id": "FR-001",
+            "title": "User Authentication",
+            "description": "Users can register, login, and manage their accounts securely",
+            "priority": "high"
+        },
+        {
+            "id": "FR-002",
+            "title": "Training Session Tracking",
+            "description": "Athletes can log training sessions with date, sport type, duration, intensity, and custom metrics",
+            "priority": "high"
+        },
+        {
+            "id": "FR-003",
+            "title": "Performance Metrics Recording",
+            "description": "Users can record various performance metrics like speed, distance, heart rate, etc.",
+            "priority": "high"
+        },
+        {
+            "id": "FR-004",
+            "title": "Dashboard Statistics",
+            "description": "Display aggregated stats including total sessions, weekly activity, and performance trends",
+            "priority": "high"
+        },
+        {
+            "id": "FR-005",
+            "title": "AI-Powered Insights",
+            "description": "Generate personalized training advice, recovery suggestions, and nutrition recommendations using AI",
+            "priority": "medium",
+            "integration_required": "openai"
+        },
+        {
+            "id": "FR-006",
+            "title": "Subscription Management",
+            "description": "Support free and paid tiers with subscription billing",
+            "priority": "medium",
+            "integration_required": "stripe"
+        }
+    ],
+    "non_functional_requirements": [
+        {
+            "id": "NFR-001",
+            "category": "Performance",
+            "description": "API response time < 200ms for 95th percentile"
+        },
+        {
+            "id": "NFR-002",
+            "category": "Security",
+            "description": "All endpoints require authentication except health check"
+        },
+        {
+            "id": "NFR-003",
+            "category": "Scalability",
+            "description": "Support up to 10,000 concurrent users"
+        },
+        {
+            "id": "NFR-004",
+            "category": "Availability",
+            "description": "99.9% uptime SLA"
+        }
+    ],
+    "core_entities": [
+        {
+            "name": "users",
+            "description": "Athlete user accounts",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "UUID",
+                    "constraints": [
+                        "PRIMARY KEY"
+                    ]
+                },
+                {
+                    "name": "email",
+                    "type": "TEXT",
+                    "constraints": [
+                        "UNIQUE",
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "full_name",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "sport",
+                    "type": "TEXT"
+                },
+                {
+                    "name": "subscription_tier",
+                    "type": "TEXT",
+                    "constraints": [
+                        "DEFAULT 'free'"
+                    ]
+                },
+                {
+                    "name": "stripe_customer_id",
+                    "type": "TEXT"
+                },
+                {
+                    "name": "created_at",
+                    "type": "TIMESTAMP",
+                    "constraints": [
+                        "DEFAULT NOW()"
+                    ]
+                },
+                {
+                    "name": "updated_at",
+                    "type": "TIMESTAMP",
+                    "constraints": [
+                        "DEFAULT NOW()"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "training_sessions",
+            "description": "Individual training session records",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "UUID",
+                    "constraints": [
+                        "PRIMARY KEY"
+                    ]
+                },
+                {
+                    "name": "user_id",
+                    "type": "UUID",
+                    "constraints": [
+                        "REFERENCES users(id)",
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "session_date",
+                    "type": "DATE",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "sport_type",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "duration_minutes",
+                    "type": "INTEGER"
+                },
+                {
+                    "name": "intensity",
+                    "type": "TEXT"
+                },
+                {
+                    "name": "notes",
+                    "type": "TEXT"
+                },
+                {
+                    "name": "metrics",
+                    "type": "JSONB",
+                    "constraints": [
+                        "DEFAULT '{}'"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "performance_metrics",
+            "description": "Athlete performance data points",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "UUID",
+                    "constraints": [
+                        "PRIMARY KEY"
+                    ]
+                },
+                {
+                    "name": "user_id",
+                    "type": "UUID",
+                    "constraints": [
+                        "REFERENCES users(id)",
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "metric_type",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "value",
+                    "type": "NUMERIC",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "unit",
+                    "type": "TEXT"
+                },
+                {
+                    "name": "recorded_at",
+                    "type": "TIMESTAMP",
+                    "constraints": [
+                        "DEFAULT NOW()"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ai_insights",
+            "description": "AI-generated training insights",
+            "condition": "openai",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "UUID",
+                    "constraints": [
+                        "PRIMARY KEY"
+                    ]
+                },
+                {
+                    "name": "user_id",
+                    "type": "UUID",
+                    "constraints": [
+                        "REFERENCES users(id)",
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "insight_type",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "content",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "context",
+                    "type": "JSONB",
+                    "constraints": [
+                        "DEFAULT '{}'"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "subscriptions",
+            "description": "Stripe subscription records",
+            "condition": "stripe",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "UUID",
+                    "constraints": [
+                        "PRIMARY KEY"
+                    ]
+                },
+                {
+                    "name": "user_id",
+                    "type": "UUID",
+                    "constraints": [
+                        "REFERENCES users(id)",
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "stripe_subscription_id",
+                    "type": "TEXT",
+                    "constraints": [
+                        "UNIQUE",
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "plan",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "status",
+                    "type": "TEXT",
+                    "constraints": [
+                        "NOT NULL"
+                    ]
+                },
+                {
+                    "name": "current_period_end",
+                    "type": "TIMESTAMP"
+                }
+            ]
+        }
+    ],
+    "api_endpoints": [
+        {
+            "path": "/auth/signup",
+            "method": "POST",
+            "description": "Register a new athlete"
+        },
+        {
+            "path": "/auth/login",
+            "method": "POST",
+            "description": "Authenticate user"
+        },
+        {
+            "path": "/users/me",
+            "method": "GET",
+            "description": "Get current user profile",
+            "auth": true
+        },
+        {
+            "path": "/users/me",
+            "method": "PATCH",
+            "description": "Update user profile",
+            "auth": true
+        },
+        {
+            "path": "/sessions",
+            "method": "GET",
+            "description": "List training sessions",
+            "auth": true
+        },
+        {
+            "path": "/sessions",
+            "method": "POST",
+            "description": "Create training session",
+            "auth": true
+        },
+        {
+            "path": "/sessions/{id}",
+            "method": "GET",
+            "description": "Get session details",
+            "auth": true
+        },
+        {
+            "path": "/sessions/{id}",
+            "method": "DELETE",
+            "description": "Delete session",
+            "auth": true
+        },
+        {
+            "path": "/metrics",
+            "method": "GET",
+            "description": "Get performance metrics",
+            "auth": true
+        },
+        {
+            "path": "/metrics",
+            "method": "POST",
+            "description": "Record performance metric",
+            "auth": true
+        },
+        {
+            "path": "/stats/dashboard",
+            "method": "GET",
+            "description": "Get dashboard statistics",
+            "auth": true
+        },
+        {
+            "path": "/insights",
+            "method": "GET",
+            "description": "Get AI insights",
+            "auth": true,
+            "condition": "openai"
+        },
+        {
+            "path": "/insights/generate",
+            "method": "POST",
+            "description": "Generate new AI insight",
+            "auth": true,
+            "condition": "openai"
+        },
+        {
+            "path": "/billing/create-checkout",
+            "method": "POST",
+            "description": "Create Stripe checkout",
+            "auth": true,
+            "condition": "stripe"
+        },
+        {
+            "path": "/billing/webhook",
+            "method": "POST",
+            "description": "Stripe webhook handler",
+            "condition": "stripe"
+        },
+        {
+            "path": "/billing/subscription",
+            "method": "GET",
+            "description": "Get subscription status",
+            "auth": true,
+            "condition": "stripe"
+        }
+    ],
+    "high_level_design": {
+        "architecture": "Modular Monolith with FastAPI",
+        "tech_stack": {
+            "framework": "FastAPI",
+            "language": "Python 3.11+",
+            "database": "Supabase (PostgreSQL)",
+            "auth": "Supabase Auth",
+            "orm": "SQLAlchemy"
+        },
+        "integrations": {
+            "stripe": {
+                "enabled": true,
+                "purpose": "Subscription billing and payment processing",
+                "price_tiers": [
+                    "pro",
+                    "premium"
+                ]
+            },
+            "openai": {
+                "enabled": true,
+                "purpose": "AI-powered training insights",
+                "model": "gpt-4"
+            }
+        },
+        "supabase_config": {
+            "row_level_security": true,
+            "realtime_enabled": [
+                "training_sessions",
+                "performance_metrics"
+            ]
+        }
+    }
+}
