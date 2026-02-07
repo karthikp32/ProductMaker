@@ -59,12 +59,13 @@ class ArchitectAgent(BaseAgent):
     def _run_design_workflow(self, prd_content: str, project_name: str, industry: str = None, segment: str = None):
         # 1. Define output path
         safe_project = project_name.replace(" ", "_").lower()
-        if industry and segment:
+        if industry:
             safe_industry = industry.replace(" ", "_").lower()
-            safe_segment = segment.replace(" ", "_").lower()
-            output_path = os.path.join("output", safe_industry, safe_segment, "design_docs", safe_project, "system_architecture.md")
+            output_dir = os.path.join("output", safe_industry, "designs")
         else:
-            output_path = os.path.join("output", safe_project, "design_docs", "system_architecture.md")
+            output_dir = os.path.join("output", safe_project, "designs")
+
+        output_path = os.path.join(output_dir, f"{safe_project}_system_design.md")
         
         # 2. Execute the tool
         design_doc = self._generate_design_doc(
@@ -93,6 +94,9 @@ class ArchitectAgent(BaseAgent):
         **PRD Content:**
         {prd_content}
 
+        **Design Doc Title Requirement:**
+        The design doc must include the product idea title: "{project_name}"
+
         **Requirements for the Design Doc:**
         1. **Executive Summary**: High-level overview of the technical approach.
         2. **Technology Stack**: Select the best stack (Languages, Frameworks, Databases, Cloud Services) with justifications.
@@ -111,6 +115,9 @@ class ArchitectAgent(BaseAgent):
                 prompt, 
                 system_prompt="You are a World-Class System Architect. You value simplicity, scalability, and performance."
             )
+
+            if project_name not in design_doc:
+                design_doc = f"# {project_name} System Design\n\n{design_doc}"
 
             # Save the file
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
