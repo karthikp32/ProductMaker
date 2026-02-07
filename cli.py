@@ -3,7 +3,7 @@ import requests
 import json
 import sys
 
-API_URL = "http://localhost:8080"
+API_URL = "http://localhost:8083"
 
 @click.group()
 def cli():
@@ -85,6 +85,77 @@ def analyze_industry():
         click.echo("PM Agent is doing high-level research and prioritization. Check logs.")
     except requests.exceptions.RequestException as e:
         click.echo(f"Error: {e}")
+        sys.exit(1)
+
+@cli.command()
+@click.option("--prd_path", default="", help="Path to the PRD file.")
+@click.option("--prd_text", default="", help="Raw PRD text (overrides --prd_path).")
+@click.option("--project_name", default="Tax Ledger for NIL athletes", help="Product idea title.")
+@click.option("--industry", default="athletes", help="Industry name for output folder.")
+@click.option("--segment", default="NIL athletes", help="Segment name.")
+def architect_design(prd_path, prd_text, project_name, industry, segment):
+    """Test Architect Agent via API with a PRD."""
+    try:
+        if prd_text:
+            prd_content = prd_text
+        elif prd_path:
+            with open(prd_path, "r") as f:
+                prd_content = f.read()
+        else:
+            click.echo("Error: Provide --prd_text or --prd_path.")
+            sys.exit(1)
+            
+        payload = {
+            "instruction": "Design the system architecture based on the attached PRD.",
+            "context": {
+                "prd_content": prd_content,
+                "project_name": project_name,
+                "industry": industry,
+                "segment": segment
+            }
+        }
+        
+        url = f"{API_URL}/instruct/architect"
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        click.echo(f"Success: {response.json()}")
+        safe_project = project_name.replace(" ", "_").lower()
+        click.echo(f"Architect Agent commissioned. Check: output/{industry}/designs/{safe_project}_system_design.md")
+        
+    except FileNotFoundError:
+        click.echo(f"Error: PRD file not found at {prd_path}")
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        click.echo(f"Error: API Request failed: {e}")
+        sys.exit(1)
+
+@cli.command()
+@click.option("--prd_path", default="", help="Path to the PRD file.")
+@click.option("--prd_text", default="", help="Raw PRD text (overrides --prd_path).")
+@click.option("--project_name", default="Tax Ledger for NIL athletes", help="Product idea title.")
+@click.option("--industry", default="athletes", help="Industry name for output folder.")
+@click.option("--segment", default="NIL athletes", help="Segment name.")
+def architect_local(prd_path, prd_text, project_name, industry, segment):
+    """Run Architect Agent locally (no API) to generate the system design doc."""
+    try:
+        if prd_text:
+            prd_content = prd_text
+        elif prd_path:
+            with open(prd_path, "r") as f:
+                prd_content = f.read()
+        else:
+            click.echo("Error: Provide --prd_text or --prd_path.")
+            sys.exit(1)
+
+        from agents.architect_agent import ArchitectAgent
+        from infrastructure.event_bus import EventBus
+
+        agent = ArchitectAgent("architect", EventBus())
+        agent._run_design_workflow(prd_content, project_name, industry, segment)
+        safe_project = project_name.replace(" ", "_").lower()
+        click.echo(f"Design doc written to output/{industry}/designs/{safe_project}_system_design.md")
+    except FileNotFoundError:
+        click.echo(f"Error: PRD file not found at {prd_path}")
         sys.exit(1)
 
 if __name__ == "__main__":
