@@ -138,6 +138,16 @@ The PM Agent writes to this store, and the Orchestrator reads from it to execute
     *   Synthesizes vast amounts of unstructured data into a thorough report.
 *   **Feeds:** PM Agent.
 
+### 1b. UI Designer Agent
+*   **Role:** Visual Architect. Owns the "Look and Feel".
+*   **Responsibilities:**
+    *   Translates PM output into cohesive design direction.
+    *   Defines page structure and component breakdown.
+    *   Sets typography, colors, and UX principles.
+*   **Inputs:** PM Output (Market Landscape, PRDs).
+*   **Outputs:** Design JSON (Direction, Pages, Components).
+*   **Tools:** `generate_designs_for_industry`.
+
 ### Resources:
 *   **LangChain Market Research Assistant Video:** `https://www.youtube.com/watch?v=2GeTGEVyPfo`
 *   **Blog about Deep Research:** `https://www.j2.gg/thoughts/deep-research-how-it-works`
